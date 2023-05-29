@@ -23,14 +23,21 @@ func main() {
 	defer conn.Close()
 
 	client := pb.NewReverseClient(conn)
+	dontclient := pb.NewDontReverseClient(conn)
 	request := &pb.Request{
 		Message: args[1],
 	}
-	response, err := client.DoSomething(context.Background(), request)
+	response1, err := client.DoSomething(context.Background(), request)
 
 	if err != nil {
 		grpclog.Fatalf("fail to dial: %v", err)
 	}
 
-	fmt.Println(response.Message)
+	response2, err := dontclient.Do(context.Background(), request)
+	if err != nil {
+		grpclog.Fatalf("fail to dial: %v", err)
+	}
+
+	fmt.Println(response1.Message)
+	fmt.Println(response2.Message)
 }

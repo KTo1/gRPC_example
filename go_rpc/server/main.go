@@ -22,6 +22,8 @@ func main() {
 	fmt.Print("server listening on 5300")
 
 	pb.RegisterReverseServer(grpcServer, &server{})
+	pb.RegisterDontReverseServer(grpcServer, &server{})
+
 	grpcServer.Serve(listener)
 }
 

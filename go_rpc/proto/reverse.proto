@@ -9,6 +9,11 @@ service Reverse {
     rpc DoSomething (Request) returns (Response) {}
 }
 
+service DontReverse {
+  rpc Do (Request) returns (Response) {}
+  rpc DoSomething (Request) returns (Response) {}
+}
+
 message Request {
     string message = 1;
 }
