@@ -1,25 +1,42 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	pb "go-rpc/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
 	"net"
+	"path"
 )
 
 func main() {
-	listener, err := net.Listen("tcp", ":5300")
+	var (
+		port      = ":5300"
+		pemFile   = "server.pem"
+		keyFile   = "server.key"
+		crtFolder = "cert"
+	)
+
+	cert, err := tls.LoadX509KeyPair(path.Join(crtFolder, pemFile), path.Join(crtFolder, keyFile))
+	if err != nil {
+		grpclog.Fatalf("Error loading certificate! %v", err)
+	}
+
+	listener, err := net.Listen("tcp", port)
 
 	if err != nil {
 		grpclog.Fatalf("failed to listen: %v", err)
 	}
 
-	opts := []grpc.ServerOption{}
+	opts := []grpc.ServerOption{
+		grpc.Creds(credentials.NewServerTLSFromCert(&cert)),
+	}
 	grpcServer := grpc.NewServer(opts...)
 
-	fmt.Print("server listening on 5300")
+	fmt.Print("server listening on ", port)
 
 	pb.RegisterReverseServer(grpcServer, &server{})
 	err = grpcServer.Serve(listener)

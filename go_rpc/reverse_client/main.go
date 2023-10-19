@@ -5,14 +5,29 @@ import (
 	"fmt"
 	pb "go-rpc/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
 	"os"
+	"path"
 )
 
 func main() {
-	opts := []grpc.DialOption{
-		grpc.WithInsecure(),
+	var (
+		hostName  = "localhost"
+		pemFile   = "server.pem"
+		crtFolder = "cert"
+	)
+
+	cred, err := credentials.NewClientTLSFromFile(path.Join(crtFolder, pemFile), hostName)
+	if err != nil {
+		grpclog.Fatalf("Error loading certificate! %v", err)
 	}
+
+	opts := []grpc.DialOption{
+		//grpc.WithInsecure(),
+		grpc.WithTransportCredentials(cred),
+	}
+
 	args := os.Args
 	conn, err := grpc.Dial("127.0.0.1:5300", opts...)
 
