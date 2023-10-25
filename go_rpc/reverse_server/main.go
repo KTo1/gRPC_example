@@ -2,12 +2,14 @@ package main
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	pb "go-rpc/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
+	"io/ioutil"
 	"net"
 	"path"
 )
@@ -17,6 +19,7 @@ func main() {
 		port      = ":5300"
 		pemFile   = "server.pem"
 		keyFile   = "server.key"
+		caFile    = "ca.crt"
 		crtFolder = "cert"
 	)
 
@@ -25,14 +28,27 @@ func main() {
 		grpclog.Fatalf("Error loading certificate! %v", err)
 	}
 
-	listener, err := net.Listen("tcp", port)
+	certPool := x509.NewCertPool()
+	ca, err := ioutil.ReadFile(path.Join(crtFolder, caFile))
+	if err != nil {
+		grpclog.Fatalf("could not read CA certificate: %v", err)
+	}
 
+	if ok := certPool.AppendCertsFromPEM(ca); !ok {
+		grpclog.Fatalf("failed to listen: %v", err)
+	}
+
+	listener, err := net.Listen("tcp", port)
 	if err != nil {
 		grpclog.Fatalf("failed to listen: %v", err)
 	}
 
 	opts := []grpc.ServerOption{
-		grpc.Creds(credentials.NewServerTLSFromCert(&cert)),
+		grpc.Creds(credentials.NewTLS(&tls.Config{
+			ClientAuth:   tls.RequireAndVerifyClientCert,
+			Certificates: []tls.Certificate{cert},
+			ClientCAs:    certPool,
+		})),
 	}
 	grpcServer := grpc.NewServer(opts...)
 
